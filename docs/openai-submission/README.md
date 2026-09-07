@@ -21,10 +21,14 @@ include the skill in the same With MCP draft; an existing integration ID is not 
 ## Completed in this preparation
 
 - Correct publisher: Int.Reaction llc; support@openstore.sh forwards through Cloudflare.
-- Policy and support pages prepared at /privacy.html, /terms.html, and /support.html.
+- Policy and support pages published and verified at /privacy.html, /terms.html, and /support.html.
 - Listing, prompts, fixtures, 6 positive cases, and 5 negative cases prepared.
 - Corrected write-tool openWorldHint to true because existing repositories can be public.
 - 238 tests, typecheck, build, and plugin/skill validation passed.
+- Worker deployed as eb117771-30df-4ea7-9349-e24d90a1003d with corrected write annotations.
+- GitHub Pages run 34155857606 succeeded; all three public pages returned HTTP 200
+  with the corrected operator and contact.
+- PNG logo export available at ../../site/assets/openstore.png.
 - OpenAI submission portal opened; it requires sign-in before further portal work.
 
 ## Required before submission

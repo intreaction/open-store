@@ -1,7 +1,7 @@
 # Legal documents
 
 These are OpenStore-specific adaptations of Automattic's openly licensed Legalmattic
-project, prepared September 7, 2026. The documents are effective September 7, 2026; HTML versions are prepared in site/.
+project, prepared September 7, 2026. The documents are effective September 7, 2026; HTML versions are published at openstore.sh and maintained in site/.
 
 Sources inspected:
 
