@@ -1,0 +1,47 @@
+{
+  "name": "openstore-mcp",
+  "version": "0.1.0",
+  "description": "OpenStore MCP server: bash-like tools over a private GitHub repository of Markdown.",
+  "license": "Apache-2.0",
+  "author": "John Wheeler",
+  "type": "module",
+  "bin": {
+    "openstore-mcp": "dist/openstore.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "dev": "wrangler dev --port 8787",
+    "dev:node": "tsx watch src/http-node.ts",
+    "deploy": "wrangler deploy",
+    "gen:seal-key": "node scripts/gen-seal-key.mjs",
+    "seal:dev-token": "tsx scripts/seal-dev-token.ts",
+    "smoke": "tsx scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@octokit/rest": "^22.0.1",
+    "diff": "^9.0.0",
+    "hono": "^4.13.7",
+    "minimatch": "^10.2.6",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.45.0"
+  }
+}

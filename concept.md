@@ -1,1602 +1,295 @@
-# ContextDB / MeDB Concept Brief
+# OpenStore Concept
 
-## 1. Executive Summary
+Status: v0.1 in progress, September 6, 2026.
 
-**ContextDB** is a free, open, Git-backed context repository for AI systems.
-
-The core idea is simple:
-
-> Give any AI a durable, user-controlled context repository that survives across models, vendors, devices, and sessions.
-
-Instead of relying on each AI provider's proprietary memory layer, ContextDB uses a Git repository as the durable source of truth. The repository contains human-readable Markdown files organized using an OKF-inspired structure. An MCP server provides consistent read/write access to that repository so ChatGPT, Claude, local models, coding agents, business agents, and other MCP-compatible systems can all work against the same context.
-
-The repository may contain personal, project, team, or business knowledge. The model is allowed to read, search, create, update, reorganize, and delete information within defined permissions. Git provides storage, history, rollback, provenance, synchronization, and portability.
-
-The service itself should remain as thin as possible.
-
-The long-term goal is not to create another proprietary AI memory platform. The goal is to define a simple, open convention for persistent AI context.
+Companion documents: `architecture.md` (components and data flow), `design.md` (tool contract and
+implementation detail), `plan.md` (phases and sequencing).
 
 ---
 
-## 2. Core Thesis
+## 1. What OpenStore is
 
-AI memory is currently fragmented.
+OpenStore gives any AI a durable, user-owned **store**: a private GitHub repository of plain Markdown
+that the AI reads and writes through MCP using bash-like tools.
 
-A user may have:
+The one-line promise:
 
-- ChatGPT memory
-- Claude memory
-- local-model memory
-- project-specific memory
-- notes in Obsidian
-- business context in Notion
-- technical context in GitHub
-- personal facts scattered across files and apps
+> **Your AI's memory is a Git repo you own. OpenStore never holds a copy.**
 
-Each system develops its own partial representation of the user, business, or project.
-
-This creates several problems:
-
-1. **Vendor lock-in**  
-   Context stored in one AI's memory system is not automatically available to another.
-
-2. **Duplication**  
-   The same facts are stored repeatedly across tools.
-
-3. **Opacity**  
-   Users may not know exactly what an AI has remembered, how it organized that information, or how to correct it.
-
-4. **Poor portability**  
-   Switching models or vendors means losing accumulated context.
-
-5. **Unclear authority**  
-   Different systems may hold conflicting versions of the same fact.
-
-6. **Bloated memory systems**  
-   Many useful facts are too obscure or infrequently relevant to belong in a model's always-loaded memory layer.
-
-ContextDB addresses these problems by separating **durable context** from **the model consuming it**.
-
-The model becomes replaceable.
-
-The context remains.
+The repository is the only source of truth. The server is a stateless pass-through. There is no
+database, no cache, and no second copy of your knowledge anywhere.
 
 ---
 
-## 3. Product Definition
+## 2. Thesis
 
-ContextDB is:
+AI memory today is fragmented. A person may have ChatGPT memory, Claude memory, local-model memory,
+project notes in Obsidian, business context in Notion, and technical context in GitHub. Each system
+builds its own partial picture.
 
-> **An open, Git-backed context repository exposed to AI systems through MCP.**
+That fragmentation causes real problems:
 
-The core stack is:
+1. **Lock-in.** Context stored in one vendor's memory is not available to another.
+2. **Duplication.** The same facts get retyped into every tool.
+3. **Opacity.** You cannot see exactly what was remembered or how to correct it.
+4. **Poor portability.** Switching models means losing accumulated context.
+5. **Unclear authority.** Different systems hold conflicting versions of the same fact.
+6. **Bloat.** Many useful facts are too obscure to belong in an always-loaded memory layer.
 
-```text
-Git        = durable storage, synchronization, versioning, rollback
-Markdown   = human-readable and AI-readable knowledge representation
-OKF        = organizational frame / interoperability convention
-MCP        = standard access layer for AI systems
-LLM        = librarian, organizer, reader, and editor
-```
+OpenStore separates durable context from the model consuming it. The model becomes replaceable. The
+context remains.
 
-The simplest possible architecture is:
-
-```text
-AI Client
-   |
-   | MCP
-   v
-ContextDB MCP Server
-   |
-   | GitHub API / Git operations
-   v
-User-owned Git repository
-```
-
-The Git repository is the source of truth.
-
-ContextDB does not need to own the user's data.
+The long-term goal is not another proprietary memory platform. It is a small open convention for
+persistent AI context.
 
 ---
 
-## 4. Intended Use Cases
+## 3. Why Git
 
-The same system should work for multiple kinds of context.
+Git gives the project several things for free that would otherwise require infrastructure.
 
-### 4.1 Personal context
+- **History.** Every change is traceable to a commit.
+- **Rollback.** A bad write is undone with a new commit that reverses it.
+- **Diff.** You can see exactly what an AI changed.
+- **Provenance.** A commit records who wrote, when, and why.
+- **Portability.** Clone it anywhere. Move it to another host.
+- **Synchronization.** Multi-device replication is already solved.
+- **Privacy.** A private GitHub repo is already private, already backed up, already authenticated.
 
-Examples:
+Because Git does the hard parts, OpenStore itself can stay tiny and free.
 
-- computers and devices
-- car information
-- home network
-- preferences
-- recurring projects
-- household information
-- education context
-- travel preferences
-- hobby information
-- important relationships
-- durable personal notes
-
-Example:
-
-```text
-personal/
-├── profile/
-├── home/
-├── technology/
-├── preferences/
-├── projects/
-├── education/
-└── people/
-```
-
-### 4.2 Business context
-
-Examples:
-
-- customers
-- vendors
-- products
-- policies
-- operating procedures
-- strategic decisions
-- projects
-- organizational knowledge
-- meeting summaries
-- sales information
-- implementation notes
-
-Example:
-
-```text
-company/
-├── customers/
-├── vendors/
-├── products/
-├── policies/
-├── processes/
-├── decisions/
-├── projects/
-└── meetings/
-```
-
-### 4.3 Project context
-
-Examples:
-
-- architecture decisions
-- requirements
-- research
-- design notes
-- open questions
-- implementation history
-- experiments
-- decisions
-
-### 4.4 Agent context
-
-An agent could maintain its own durable repository containing:
-
-- goals
-- operating procedures
-- previous decisions
-- tool notes
-- workflows
-- lessons learned
-- long-running task state
+One consequence matters more than the rest. If OpenStore disappears tomorrow, your store is still a
+folder of Markdown files with full history. Nothing needs to be exported.
 
 ---
 
-## 5. Product Philosophy
+## 4. Why Markdown
 
-### 5.1 The user owns the bytes
+Markdown is readable by people and by models with no adapter in between.
 
-Context should live in infrastructure controlled by the user.
+You can clone the store and edit it in VS Code, in Obsidian, in a text editor, or directly on
+github.com. Directories carry subject grouping. Links connect related documents. Optional YAML
+frontmatter adds light metadata. A root `CONTEXT.md` explains the store to agents.
 
-For the initial implementation, that is likely a private GitHub repository.
-
-The project may later support:
-
-- GitLab
-- Gitea
-- Forgejo
-- local Git
-- self-hosted Git servers
-- other Git-compatible backends
-
-### 5.2 The AI provider does not own the memory
-
-ChatGPT, Claude, local models, and other AI systems should all be clients of the same context repository.
-
-```text
-                    Context Repository
-                           |
-          +----------------+----------------+
-          |                |                |
-       ChatGPT          Claude          Local AI
-```
-
-### 5.3 Context should remain useful without ContextDB
-
-If the software disappears, the repository still contains ordinary Markdown files.
-
-The user should be able to:
-
-- clone it
-- browse it
-- edit it in VS Code
-- edit it in Obsidian
-- inspect history with Git
-- move it to another Git provider
-- build another MCP server against it
-
-There should be no proprietary binary database required to recover the user's knowledge.
-
-### 5.4 Prefer convention over platform
-
-ContextDB should define a small, understandable convention rather than become a large SaaS platform.
-
-The protocol and repository format should be more important than any hosted implementation.
+The content carries most of the meaning. That is the point. There is no proprietary binary format
+standing between you and your own knowledge.
 
 ---
 
-## 6. Repository as the Database
+## 5. User flow
 
-The Git repository functions as the durable database.
+1. Visit the OpenStore site.
+2. Click "Create your store". GitHub creates a private repository from the OpenStore template.
+3. Install the OpenStore plugin in Claude. Claude Code first, other clients later.
+4. Talk normally.
 
-Example:
+Behind the conversation, the AI searches the store to recall and commits to remember. There is no
+separate app to visit, no inbox of pending changes, and nothing to approve on a web page.
 
-```text
-context/
-├── README.md
-├── index.md
-├── profile/
-├── people/
-├── places/
-├── things/
-├── projects/
-├── decisions/
-├── preferences/
-└── archive/
-```
-
-However, this structure should not be rigid.
-
-A major principle is:
-
-> **The LLM may decide how to organize information within the OKF/context framework.**
-
-A personal repository may evolve toward:
+Recall looks like this:
 
 ```text
-home/
-school/
-technology/
-projects/
-preferences/
+grep -ril "router"
+cat home/network.md
 ```
 
-A company repository may evolve toward:
+Remembering looks like this:
 
 ```text
-customers/
-operations/
-products/
-people/
-policies/
-decisions/
+write -m "Update home gateway" home/network.md
+wrote home/network.md (+1 -1) @ 1f7abd7
 ```
 
-A research repository may evolve toward:
-
-```text
-papers/
-experiments/
-datasets/
-findings/
-questions/
-```
-
-The organization should emerge from the information being stored.
+Consent happens in the conversation. The model shows the exact change, then writes after you agree.
+Claude and ChatGPT also prompt before running write tools, so there is a second gate at the client.
+Undo is `git_revert`, which adds a new commit. History is never rewritten and the branch is never
+force-pushed.
 
 ---
 
-## 7. OKF-Inspired Frame
+## 6. Zero access and no retention, stated honestly
 
-ContextDB should avoid inventing a large ontology.
+The hosted server holds nothing between requests. No database, no key-value store, no SQLite, no
+disk files, no in-memory state that outlives a single tool call. Content and credentials pass through
+process memory during a request and are never written down. Logs record the tool name, exit code,
+duration, and byte counts. Never content.
 
-Instead, it should use a lightweight OKF-inspired frame:
+Here is the honest part. A hosted operator *could* read traffic in flight. Any pass-through service
+could. What OpenStore promises is that nothing is retained, and that you can remove even the
+in-flight exposure by running the same code yourself.
 
-- Markdown is the primary representation.
-- Directories establish subject grouping.
-- Links connect related documents.
-- Optional YAML frontmatter provides lightweight metadata.
-- A root README or manifest explains the repository to agents.
-- The content itself carries most of the semantics.
+What backs the claim:
 
-Example file:
+- Open source under Apache-2.0, so the code can be read.
+- A deploy configuration with no storage bindings at all.
+- Reproducible builds.
+- One-click self-hosting of the identical server.
 
-```markdown
----
-type: device
-title: Mac mini
-tags:
-  - computer
-  - local-ai
-updated: 2026-09-06
----
-
-# Mac mini
-
-M4 Mac mini with 24 GB RAM.
-
-Primarily used for personal projects and small-scale local AI work.
-
-## Related
-
-- [[home-network]]
-- [[local-ai-projects]]
-```
-
-The framework should not require a complete schema for every possible human or business concept.
-
-LLMs are already good at extracting structure from prose.
+A private GitHub repository is private. It is not a secrets vault. Passwords, API keys, private
+keys, identity documents, and financial or medical credentials do not belong in a store. Preferences,
+equipment, projects, procedures, and durable facts do.
 
 ---
 
-## 8. Soft Schema
+## 7. Bash-like tools as the deliberate interface
 
-Traditional databases require predefined schema.
+Models already know bash. They have read millions of lines of it. So the store speaks bash.
 
-ContextDB can use a **soft schema**.
+The tools are `ls`, `find`, `grep`, `cat`, `head`, `tail`, `tree`, `pwd`, `git_log`, `git_show`,
+`git_diff` for reading, and `write`, `mv`, `rm`, `git_revert` for changing. Output is plain text
+exactly as a terminal would print it. Errors read like bash errors, for example
+`cat: home/router.md: No such file or directory`.
 
-The rule is:
+This is not a real shell, and that is deliberate. Each tool takes an `args` string that the server
+parses with bash quoting rules. There are no pipes, no subprocesses, and no host filesystem. Only
+repo-relative paths resolve. Paths with `..`, absolute paths, `//`, backslashes, and a leading `~`
+are refused with `Permission denied`. Dot-directories and every file type outside
+`.md .markdown .txt .yml .yaml .json .csv` are invisible rather than forbidden: asking for one
+returns the same `No such file or directory` a missing file would.
 
-> Follow the organizational patterns already present in the repository.
+The gain is that no domain-specific vocabulary has to be invented. There is no `get_vehicle()` or
+`update_customer()` to learn. A model that can use a terminal can use a store on its first try.
 
-The LLM should inspect the repository before deciding where new information belongs.
-
-For example, when told:
-
-> "I replaced my router with a UDM Pro Max."
-
-The model might:
-
-```text
-find network
-read home/network.md
-```
-
-Then decide that the existing file should be updated rather than creating another document.
-
-If no relevant structure exists, the model may create one:
-
-```text
-home/
-└── network.md
-```
-
-This gives the system adaptability without requiring a universal ontology for people, businesses, or projects.
+Each write tool call is exactly one commit on the branch. `design.md` carries the full contract.
 
 ---
 
-## 9. LLM as Librarian
+## 8. Soft schema
 
-The LLM is not merely querying the repository.
+Traditional databases demand a schema up front. A store uses a soft one.
 
-It can act as its librarian.
+The rule is simple:
 
-Responsibilities may include:
+> Follow the organizational patterns already present in the store.
 
-- deciding where information belongs
-- merging duplicate information
-- updating stale facts
-- maintaining indexes
-- creating new topic files
-- linking related information
-- archiving obsolete information
-- splitting oversized files
-- detecting contradictory facts
-- identifying structural problems
+A model inspects before it decides. Told "I replaced my router with a UDM Pro Max", it searches for
+existing network notes, reads `home/network.md`, and updates that file rather than creating a second
+one. If no relevant structure exists, it creates one.
 
-However, the system should favor continuity over unnecessary reorganization.
+A personal store may grow toward `home/`, `technology/`, `projects/`, `preferences/`, `people/`. A
+company store may grow toward `customers/`, `products/`, `policies/`, `decisions/`. A research store
+may grow toward `papers/`, `experiments/`, `findings/`. The organization emerges from the information
+being stored.
 
-A useful guiding instruction:
-
-> Preserve existing organization unless a change provides a clear retrieval or maintenance benefit.
-
-Otherwise, different models may repeatedly reorganize the repository according to their own preferences.
+This avoids inventing a universal ontology for people, businesses, and projects. Human knowledge is
+too varied for one, and LLMs are already good at pulling structure out of prose.
 
 ---
 
-## 10. MCP Interface
+## 9. LLM as librarian
 
-The MCP server should expose repository operations in a form that LLMs already understand naturally.
+The model is not only querying the store. It can keep it.
 
-The strongest model is **safe Bash-like access** rather than arbitrary raw shell execution.
+Librarian work includes deciding where information belongs, merging duplicates, updating stale facts,
+creating topic files, linking related documents, splitting oversized files, and surfacing
+contradictions.
 
-### 10.1 Why shell-like semantics
+One rule keeps this from going wrong:
 
-Models already understand commands such as:
+> Preserve existing organization unless a change gives a clear retrieval or maintenance benefit.
 
-```text
-ls
-find
-grep
-cat
-mkdir
-mv
-cp
-rm
-```
+Without it, each model reorganizes the store to its own taste, and the history fills with churn.
+Continuity beats tidiness.
 
-This reduces the need to create domain-specific tools like:
-
-```text
-get_vehicle()
-update_customer()
-find_preference()
-```
-
-The model can instead work directly with the repository.
-
-### 10.2 Do not expose unrestricted Bash
-
-The system should not provide arbitrary host shell access.
-
-Raw Bash introduces unnecessary risks:
-
-- host filesystem access
-- environment-variable leakage
-- SSH key access
-- arbitrary network requests
-- package installation
-- subprocess execution
-- command injection
-- privilege escalation
-- accidental destructive commands
-
-Instead, expose a virtual, repository-scoped shell.
-
-Example MCP operations:
-
-```text
-pwd
-ls
-find
-grep
-cat
-head
-tail
-
-mkdir
-mv
-cp
-rm
-write
-patch
-
-git_status
-git_diff
-git_log
-git_commit
-git_revert
-```
-
-The MCP server interprets these operations safely.
+The standing instructions live in the store itself, in `CONTEXT.md`, which the server also serves as
+its MCP instructions. Text in the store can shape organization. It can never change permissions.
 
 ---
 
-## 11. Structured Tool Alternative
+## 10. What this is for
 
-Rather than accepting raw shell strings, tools may be structured.
+The same design serves several kinds of context.
 
-Example:
+- **Personal.** Devices, home network, preferences, recurring projects, people, durable notes.
+- **Business.** Customers, vendors, products, policies, procedures, decisions, meeting summaries.
+- **Project.** Architecture decisions, requirements, research, open questions, experiments.
+- **Agent.** Goals, operating procedures, prior decisions, tool notes, lessons learned.
 
-```json
-{
-  "command": "grep",
-  "args": ["-R", "Mac mini", "technology/"]
-}
-```
-
-or:
-
-```json
-{
-  "command": "read",
-  "path": "home/network.md"
-}
-```
-
-Structured commands make it easier to:
-
-- validate paths
-- enforce permissions
-- prevent shell injection
-- audit operations
-- restrict destructive behavior
-
-The model still experiences familiar filesystem semantics.
+For business use the audit trail matters most. A commit says which agent changed a customer record,
+when, and what the previous value was. Traditional AI memory offers nothing comparable.
 
 ---
 
-## 12. Core MCP Tool Set
+## 11. Not a database, not a note app
 
-A minimal first version could expose:
+OpenStore is not a note-taking app, a wiki, a memory SaaS, a vector database, an ontology, or a CRM.
+Users already have good editors, and embeddings are not the core problem. Ordinary text search over a
+few thousand Markdown files works well, and no embedding index gets added until real usage proves
+plain search is insufficient.
 
-### Navigation
-
-```text
-repo_list(path)
-repo_find(query, path?)
-repo_search(query)
-repo_read(path)
-```
-
-### Mutation
-
-```text
-repo_create(path, content)
-repo_patch(path, patch)
-repo_move(source, destination)
-repo_delete(path)
-repo_mkdir(path)
-```
-
-### Git
-
-```text
-git_status()
-git_diff()
-git_log(path?)
-git_commit(message)
-git_revert(commit)
-```
-
-### Higher-level optional tools
-
-```text
-propose_update(...)
-review_structure()
-find_duplicates()
-rebuild_index()
-```
-
-The project should begin with the smallest reliable tool surface possible.
+The differentiator is a portable, writable, authoritative context layer shared across AI systems. The
+interesting problem is not retrieval. It is deciding what from a conversation deserves to become
+durable, and writing that down where the user can see it.
 
 ---
 
-## 13. Git as the Transaction and History Layer
+## 12. Open source, standard before product
 
-Git provides several important capabilities for free.
+The reference implementation is Apache-2.0 and public. Anyone can read it, fork it, or run it.
 
-### Version history
+The more valuable artifact may be the convention rather than the hosted service. The format is small
+enough to state in full:
 
-Every change can be traced.
-
-```text
-commit abc123
-Author: chatgpt
-Update home network gateway
-```
-
-### Rollback
-
-Bad AI changes can be reverted.
-
-### Diff
-
-Users can see exactly what an AI changed.
-
-```diff
-- Gateway: Amplifi Alien
-+ Gateway: UDM Pro Max
-```
-
-### Provenance
-
-A commit can identify:
-
-- which model made a change
-- when it occurred
-- why it occurred
-- what files changed
-
-### Portability
-
-The repo can be cloned anywhere.
-
-### Synchronization
-
-Git already solves multi-device replication.
-
-This avoids building a custom synchronization service.
-
----
-
-## 14. Mutation Model
-
-A key design choice is whether AI systems may write automatically.
-
-ContextDB should support multiple permission levels.
-
-### Read only
-
-The model may search and retrieve context.
-
-### Read + propose
-
-The model can prepare changes but requires user approval before committing.
-
-### Read + write
-
-The model may update approved portions of the repository automatically.
-
-### Administrative
-
-The model may:
-
-- restructure directories
-- delete files
-- perform broad refactors
-- revert history
-
-A good default is likely:
-
-> **Read automatically; propose durable changes.**
-
-More trusted agents can be granted stronger permissions.
-
----
-
-## 15. GitHub Authentication
-
-The simplest user experience is:
-
-1. Sign in with GitHub.
-2. Install the ContextDB GitHub App.
-3. Grant it access to one selected repository.
-4. Create or select the context repository.
-5. Connect an AI client.
-
-A GitHub App is likely preferable to broad OAuth permissions because repository access can be narrowly scoped.
-
-The desired permission is approximately:
-
-```text
-Repository contents: Read and write
-```
-
-Potential additional permissions should be minimized.
-
-The application should not require access to unrelated repositories.
-
----
-
-## 16. User Experience
-
-The ideal onboarding experience should be extremely simple.
-
-```text
-Connect GitHub
-      ↓
-Choose repository
-      ↓
-Initialize Context Repository
-      ↓
-Connect AI
-      ↓
-Done
-```
-
-The initial user should not need to understand:
-
-- Git internals
-- YAML
-- MCP implementation details
-- embeddings
-- databases
-- vector search
-
-Advanced users can work directly with the repository.
-
----
-
-## 17. ContextDB Does Not Need to Look Like GitHub
-
-A lightweight management UI could present the repository as knowledge rather than files.
-
-Example:
-
-```text
-YOUR CONTEXT
-
-Home
-  Network
-  Devices
-  Maintenance
-
-Technology
-  Computers
-  AI Projects
-  Software Preferences
-
-Projects
-  ContextDB
-  Pocket Watch
-  Local AI
-
-Preferences
-  Travel
-  Technology
-  Food
-```
-
-Behind the interface, changes remain ordinary Markdown commits.
-
-The UI is optional.
-
-The repository remains authoritative.
-
----
-
-## 18. Hosted Architecture
-
-A public hosted MCP endpoint may exist for users who do not have an always-running computer.
-
-Example:
-
-```text
-ChatGPT / Claude
-        |
-        | MCP
-        v
-Hosted ContextDB MCP
-        |
-        | GitHub API
-        v
-Private GitHub Repository
-```
-
-The hosted service should remain thin.
-
-Ideally it stores only:
-
-- authentication/session state
-- GitHub App installation identifiers
-- minimal configuration
-- permissions metadata
-
-It should not maintain a duplicate copy of the user's context.
-
----
-
-## 19. Local Architecture
-
-Advanced users should also be able to run ContextDB locally.
-
-Example:
-
-```text
-Claude Desktop
-      |
-      | MCP
-      v
-Local ContextDB Server
-      |
-      v
-Local Git Clone
-      |
-      v
-GitHub
-```
-
-Potential invocation:
-
-```bash
-npx contextdb-mcp
-```
-
-or:
-
-```bash
-docker run contextdb/mcp
-```
-
-The local and hosted implementations should follow the same protocol.
-
----
-
-## 20. Free and Open Goal
-
-A major project objective is:
-
-> **ContextDB should remain free and openly accessible.**
-
-The architecture makes this plausible because expensive infrastructure is avoided.
-
-### GitHub provides
-
-- repository storage
-- authentication
-- synchronization
-- version history
-- API
-- backups
-- private repositories
-
-### The user's AI provider provides
-
-- inference
-- reasoning
-- organization
-- summarization
-- retrieval reasoning
-
-### ContextDB provides
-
-- MCP translation
-- permission enforcement
-- repo conventions
-- optional UI
-- lightweight authentication bridge
-
-No central vector database is required.
-
-No GPU infrastructure is required.
-
-No permanent hosted user database is required.
-
-No always-running home server is required.
-
----
-
-## 21. Open Source Model
-
-The project should be open source.
-
-Potential license:
-
-- MIT
-- Apache 2.0
-
-Core components:
-
-```text
-contextdb-spec
-contextdb-mcp
-contextdb-github
-contextdb-cli
-contextdb-web
-```
-
-Not all components are required initially.
-
-The most important artifacts are:
-
-1. repository convention
-2. MCP tool contract
-3. reference implementation
-
----
-
-## 22. Standard Before Product
-
-A useful framing is that ContextDB may be more valuable as a **standard/convention** than as a SaaS product.
-
-The project could define:
-
-> ContextDB Context Format v0.1
-
-This might specify only a few rules:
-
-1. Context is stored in human-readable files.
-2. Markdown is the preferred knowledge format.
-3. A root manifest explains the repository.
+1. Context lives in human-readable files.
+2. Markdown is the preferred format.
+3. A root manifest explains the store to agents.
 4. Agents inspect existing organization before creating new structure.
-5. Git history is preserved.
-6. Agents should prefer updating existing knowledge over creating duplicates.
-7. Secrets should not be stored by default.
-8. Implementations must prevent repository access from escaping the approved root.
-9. MCP operations should behave consistently across implementations.
+5. Agents prefer updating existing knowledge over creating duplicates.
+6. Git history is preserved and never rewritten.
+7. Secrets are not stored.
+8. Implementations must prevent access from escaping the store root.
+9. Tool behavior is consistent across implementations.
 10. Users retain full ownership and portability.
 
-Anyone could then create a compatible implementation.
+Anyone can build a compatible implementation against that. The three artifacts that matter are the
+store convention, the tool contract, and one reference server. Everything else is optional.
+
+Sustainability follows from the architecture. GitHub provides storage, auth, sync, history, and
+backups. The user's AI provider provides inference. OpenStore provides a thin translation layer with
+no state to pay for. There is no vector database, no GPU, and no hosted user database to fund.
 
 ---
 
-## 23. Security Model
+## 13. Naming note
 
-The system should distinguish **context** from **secrets**.
-
-Appropriate information may include:
-
-- preferences
-- equipment
-- project details
-- business context
-- operating procedures
-- non-sensitive customer notes
-- home information
-- durable facts
-
-Information that should generally not be stored without stronger encryption controls:
-
-- passwords
-- API keys
-- private keys
-- Social Security numbers
-- identity documents
-- sensitive financial credentials
-- highly sensitive medical records
-- authentication secrets
-
-A private GitHub repository is private, but it should not automatically be treated as a secrets vault.
-
-Future versions could support encrypted files or secret references.
+This project was formerly called ContextDB, and before that MeDB. Both names were retired.
+"Database" implied SQL, rigid schemas, and a system that holds your data. OpenStore holds nothing.
+The name says what it is: an open store that you own.
 
 ---
 
-## 24. Path Safety
+## 14. Design principles
 
-All file operations must be sandboxed to the selected repository.
-
-For example:
-
-```text
-../../.ssh/id_rsa
-```
-
-must never be valid.
-
-Protections should include:
-
-- canonical path validation
-- symlink restrictions
-- repository-root enforcement
-- file size limits
-- operation limits
-- blocked executable paths
-- blocked arbitrary subprocesses
-- no raw host-shell access
+1. The user owns the bytes.
+2. The Git repository is the only source of truth.
+3. The server keeps nothing between requests.
+4. Markdown stays human-readable without our software.
+5. Tools behave like bash because models already know bash.
+6. Writes are ordinary commits, one per tool call.
+7. History is append-only. Undo is a revert, never a rewrite.
+8. Existing organization is respected by default.
+9. Implementations are replaceable, and self-hosting is a first-class path.
+10. No infrastructure is added until real usage proves it necessary.
+11. The core stays free and open.
+12. Context survives model and vendor changes.
 
 ---
 
-## 25. Deletion and Destructive Operations
+## 15. Open questions
 
-Destructive operations should be more restricted than normal writes.
-
-Potential policy:
-
-```text
-read                → automatic
-create/update        → automatic or permission based
-move                 → permission based
-delete               → propose by default
-mass restructure     → explicit approval
-git revert           → explicit approval
-```
-
-Git provides recovery, but user consent still matters.
+- How much autonomy should a model have to restructure a store?
+- Should frontmatter and wiki-style links be standardized or left optional?
+- When two agents write at once, is retry-on-conflict enough, or should conflicts surface in chat?
+- Should encrypted files or secret references ever be supported, or is "no secrets" the permanent answer?
+- Do non-GitHub backends (GitLab, Gitea, local Git) justify the abstraction cost?
+- Is plain text search sufficient at ten thousand files, and what is the honest ceiling?
 
 ---
 
-## 26. Search
+## 16. North star
 
-The first version should avoid unnecessary infrastructure.
-
-Search can begin with:
-
-- filename search
-- Markdown text search
-- grep-like search
-- GitHub code search where appropriate
-- LLM-driven iterative retrieval
-
-Example:
-
-```text
-find "router"
-grep "UDM"
-read home/network.md
-```
-
-Semantic/vector search can be added later if needed.
-
-A major design principle should be:
-
-> Do not add embeddings until actual usage demonstrates that ordinary repository search is insufficient.
-
-This keeps the system free and simple.
-
----
-
-## 27. LLM-Managed Organization
-
-The LLM should be permitted to decide how to organize knowledge, within constraints.
-
-A potential agent instruction:
-
-```text
-This repository contains durable context.
-
-When adding information:
-
-1. Search for existing relevant information first.
-2. Prefer updating an existing document over creating a duplicate.
-3. Follow the repository's existing organizational patterns.
-4. Create a new file only when the topic is meaningfully distinct.
-5. Keep documents focused and readable.
-6. Link related documents when useful.
-7. Preserve historically relevant information.
-8. Avoid unnecessary reorganizations.
-9. Do not store credentials or secrets.
-10. Make changes in clear Git commits.
-```
-
-This instruction may be stored in:
-
-```text
-README.md
-```
-
-or:
-
-```text
-CONTEXT.md
-```
-
-or an OKF-compatible manifest.
-
----
-
-## 28. Structural Review
-
-Over time, repositories may become messy.
-
-A model could periodically run a structural review.
-
-Possible operation:
-
-```text
-review_structure()
-```
-
-The review might identify:
-
-- duplicate files
-- duplicate facts
-- stale indexes
-- orphan documents
-- oversized files
-- inconsistent naming
-- contradictory facts
-- obsolete sections
-- opportunities to merge or split documents
-
-The system should **propose** broad reorganizations rather than automatically performing them.
-
----
-
-## 29. Personal Example
-
-Repository:
-
-```text
-john-context/
-├── README.md
-├── home/
-│   ├── network.md
-│   └── maintenance.md
-├── technology/
-│   ├── computers.md
-│   └── local-ai.md
-├── education/
-│   └── graduate-program.md
-├── projects/
-│   ├── contextdb.md
-│   └── pocket-watch.md
-└── preferences/
-    └── technology.md
-```
-
-User says:
-
-> My Mac mini has 24 GB of RAM and I mostly use it for small local AI projects.
-
-The model:
-
-```text
-search "Mac mini"
-read technology/computers.md
-patch technology/computers.md
-git_diff
-git_commit "Update Mac mini context"
-```
-
-Later, Claude asks about local model recommendations.
-
-It queries the same repository and sees the updated context.
-
-The fact is no longer tied to ChatGPT memory.
-
----
-
-## 30. Business Example
-
-Repository:
-
-```text
-acme-context/
-├── README.md
-├── customers/
-├── products/
-├── policies/
-├── processes/
-├── vendors/
-├── decisions/
-├── projects/
-└── meetings/
-```
-
-A sales agent updates:
-
-```text
-customers/example-corp.md
-```
-
-A management agent later reads the same file.
-
-A coding agent reads:
-
-```text
-products/api.md
-```
-
-A support agent reads:
-
-```text
-policies/refunds.md
-```
-
-All agents operate against one durable knowledge source.
-
----
-
-## 31. Why Git Matters for Business Use
-
-Git provides an audit trail that traditional AI memory systems often lack.
-
-Example:
-
-```text
-commit 7ac80f
-Author: sales-agent
-Update Example Corp renewal status
-
-commit b9913a
-Author: John
-Correct contract value
-```
-
-This enables:
-
-- accountability
-- correction
-- history
-- auditability
-- model attribution
-- rollback
-- review workflows
-
-These capabilities may become especially valuable for business use.
-
----
-
-## 32. Potential Naming
-
-The original concept started as **MeDB**, focused on personal context.
-
-Because the design applies equally well to business, projects, teams, and agents, a broader name may be preferable.
-
-Working concepts:
-
-- ContextDB
-- ContextRepo
-- OpenContext
-- Agent Context Repository
-- ContextFS
-- ContextGit
-- ContextBase
-- GitContext
-- OpenContextDB
-
-The project name should communicate:
-
-- durable context
-- interoperability
-- openness
-- repository ownership
-
-"Database" may be technically accurate but may imply SQL and rigid schemas.
-
-"Context Repository" may better describe the mental model.
-
----
-
-## 33. Primary Differentiator
-
-The project is not fundamentally:
-
-- a note-taking application
-- a wiki
-- an AI memory SaaS
-- a vector database
-- an ontology
-- a CRM
-- a document management system
-
-The differentiator is:
-
-> **A portable, writable, authoritative context layer shared across AI systems.**
-
-The key idea is not merely retrieval.
-
-It is **shared durable context plus controlled mutation**.
-
----
-
-## 34. Important Design Principle: Consentful Mutation
-
-Many systems can read Markdown.
-
-The more interesting challenge is deciding:
-
-> What information from a conversation deserves to become durable context?
-
-A useful pattern is:
-
-```text
-User:
-I replaced my router with a UDM Pro Max.
-
-AI:
-I found that home/network.md still lists your previous gateway.
-
-Proposed change:
-- Amplifi Alien
-+ UDM Pro Max
-
-[Approve] [Edit] [Reject]
-```
-
-After approval:
-
-```text
-git commit -m "Update home gateway"
-```
-
-This creates explicit, inspectable memory rather than opaque model memory.
-
----
-
-## 35. Authority Model
-
-The repository should be authoritative.
-
-AI memories may be temporary or derived.
-
-The rule should be:
-
-> **The repository is the durable source of truth.**
-
-If multiple models disagree, they should inspect the repository.
-
-If a fact changes, the repository is updated.
-
-Git history preserves the previous state.
-
----
-
-## 36. Interoperability Goal
-
-A central requirement is universal access.
-
-The same repository should be usable by:
-
-- ChatGPT
-- Claude
-- local LLMs
-- IDE agents
-- coding agents
-- voice agents
-- business agents
-- automation systems
-- future AI products
-
-MCP is the initial interoperability layer.
-
-The repository itself should remain useful even for clients that do not support MCP.
-
----
-
-## 37. MVP
-
-The first version should remain extremely small.
-
-### MVP requirements
-
-1. GitHub login
-2. GitHub App installation
-3. Select one private repository
-4. Initialize minimal context structure
-5. Hosted MCP endpoint
-6. Repository-scoped filesystem operations
-7. Git status/diff/commit support
-8. Read/write permission modes
-9. Root repository instructions
-10. Open-source reference implementation
-
-### Explicitly avoid in v0.1
-
-- vector database
-- embeddings
-- custom AI model
-- complex ontology
-- multi-provider Git support
-- billing
-- enterprise RBAC
-- elaborate web UI
-- autonomous background agents
-- custom sync engine
-
----
-
-## 38. Possible v0.1 Repository
-
-```text
-context/
-├── README.md
-├── index.md
-└── topics/
-```
-
-That may be enough.
-
-The model can evolve the repository as needed.
-
-The specification should resist over-design.
-
----
-
-## 39. Possible v0.1 MCP API
-
-```text
-list(path)
-read(path)
-search(query)
-write(path, content)
-patch(path, diff)
-move(source, destination)
-delete(path)
-
-status()
-diff()
-history(path?)
-commit(message)
-```
-
-Everything else can be added after real usage.
-
----
-
-## 40. Hosting Model
-
-The project should support two modes from the beginning conceptually.
-
-### Hosted
-
-A free public endpoint for convenience.
-
-```text
-mcp.contextdb.org
-```
-
-Advantages:
-
-- works with cloud-hosted AI
-- no always-running computer
-- easy onboarding
-
-### Self-hosted
-
-Users can run their own implementation.
-
-Advantages:
-
-- zero dependency on project infrastructure
-- maximum control
-- ideal for advanced users and businesses
-- protects the project's "free forever" philosophy
-
-The protocol should make hosted implementations replaceable.
-
----
-
-## 41. Sustainability
-
-The goal is free access, but the project should avoid depending on indefinite founder-funded infrastructure.
-
-Possible future funding models that preserve a free core:
-
-- GitHub Sponsors
-- donations
-- grants
-- sponsorships
-- enterprise deployment support
-- managed organizational hosting
-- compliance features
-- advanced administration
-- paid support
-- consulting
-
-The context format, MCP contract, and self-hosted implementation should remain open.
-
----
-
-## 42. What the Project Should Not Become
-
-Avoid drifting into:
-
-### A proprietary memory cloud
-
-That defeats the portability goal.
-
-### A universal ontology
-
-Human and business knowledge is too varied.
-
-### A vector database company
-
-Embeddings may be useful but are not the core problem.
-
-### A note-taking application
-
-Users already have excellent editors.
-
-### An AI vendor-specific integration
-
-The main value is independence from AI providers.
-
-### A giant SaaS platform
-
-The system is strongest when the core remains small.
-
----
-
-## 43. Core Design Principles
-
-1. **User owns the context.**
-2. **Git repository is the durable authority.**
-3. **Markdown remains human-readable.**
-4. **MCP provides standard AI access.**
-5. **The LLM may organize the repository.**
-6. **Existing structure should be respected.**
-7. **Writes are inspectable Git changes.**
-8. **Permissions control mutation.**
-9. **Implementations must be replaceable.**
-10. **No always-running personal computer is required.**
-11. **No proprietary storage layer is required.**
-12. **Keep the core free and open.**
-13. **Avoid infrastructure until usage proves it necessary.**
-14. **Context should survive model and vendor changes.**
-
----
-
-## 44. One-Sentence Product Definition
-
-> **ContextDB is an open-source MCP layer that turns a user-owned Git repository into persistent, writable context shared across AI systems.**
-
----
-
-## 45. Alternative Short Definition
-
-> **Git for AI context.**
-
----
-
-## 46. Longer Product Pitch
-
-AI systems increasingly remember information about people, projects, and organizations, but that memory is fragmented across vendors and applications.
-
-ContextDB provides a shared context repository that the user owns.
-
-Knowledge is stored as ordinary Markdown in Git. AI systems connect through MCP and can search, read, propose changes, update files, and organize the repository within controlled permissions.
-
-Git provides storage, history, rollback, synchronization, and provenance. Markdown keeps the information understandable without proprietary software. MCP makes the context accessible across AI providers.
-
-The result is a persistent context layer that remains available even when the user's preferred AI changes.
-
----
-
-## 47. Open Questions
-
-The project still needs decisions around:
-
-### Repository format
-- How closely should ContextDB conform to OKF?
-- Is a manifest required?
-- Should frontmatter be required or optional?
-- Should wiki-style links be standardized?
-
-### MCP API
-- One general repository execution tool or multiple explicit tools?
-- How shell-like should operations appear?
-- Should Git operations be exposed directly?
-
-### Mutation
-- Should write access be automatic by default?
-- Should `propose_update` be the preferred primitive?
-- How should user approval work across different MCP clients?
-
-### Authentication
-- GitHub App vs OAuth App?
-- How should hosted MCP sessions authenticate?
-- How are GitHub installation tokens handled?
-
-### Git behavior
-- One commit per operation?
-- One commit per conversational task?
-- Should AI identity appear in commit metadata?
-- Should branches or pull requests be used for proposed changes?
-
-### Search
-- Is ordinary text search enough?
-- When should semantic indexing be introduced?
-- Could local disposable indexes improve performance without becoming authoritative?
-
-### Sensitive data
-- Should encrypted files be supported?
-- Should ContextDB define secret references?
-- Should sensitive categories be explicitly discouraged?
-
-### Multi-agent conflicts
-- What happens when two agents edit simultaneously?
-- How should merge conflicts be surfaced?
-- Should writes use optimistic concurrency checks?
-
-### Organization
-- How much autonomy should models have to reorganize?
-- Should major structural changes require approval?
-- Should periodic structural reviews be part of the standard?
-
----
-
-## 48. Suggested Next Step
-
-Before implementing code, create three artifacts:
-
-1. **ContextDB v0.1 Specification**  
-   Defines repository rules, safety constraints, and interoperability requirements.
-
-2. **MCP Tool Contract**  
-   Defines the exact operations available to AI clients.
-
-3. **Reference Repository**  
-   A small example personal or project context repo showing how the system should behave.
-
-Only after those are coherent should the first GitHub App / MCP reference implementation be built.
-
----
-
-## 49. North Star
-
-The long-term idea can be summarized as:
-
-> **Applications should not each own their own isolated AI memory. People and organizations should own an authoritative context repository that any authorized AI can use.**
+> Applications should not each own an isolated AI memory. People and organizations should own an
+> authoritative store that any authorized AI can use.
 
 Or more simply:
 

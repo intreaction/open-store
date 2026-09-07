@@ -1,0 +1,41 @@
+# OpenStore hosted endpoint.
+#
+# No application storage bindings: no KV, D1, Durable Object, R2, queue, or cache.
+# This configuration and the source are both part of the privacy boundary;
+# absence of bindings alone cannot prevent changed code from sending data away.
+
+name = "openstore-mcp"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+
+# The endpoint's one public origin. The GitHub App's callback URL must match it
+# exactly, so the workers.dev preview hostname is disabled. The openstore.sh zone
+# must be on Cloudflare for this custom domain to attach (docs/deploy.md).
+workers_dev = false
+routes = [
+  { pattern = "mcp.openstore.sh", custom_domain = true }
+]
+
+# Cloudflare invocation logs include full request URLs (OAuth codes/state).
+# Disable persisted logs and traces rather than retaining those credentials.
+[observability]
+enabled = false
+
+[vars]
+# The GitHub App's URL slug, from https://github.com/apps/<slug>.
+GITHUB_APP_SLUG = "openstore-mcp"
+# REQUIRED before deploying. The GitHub App's numeric id, shown on its settings
+# page. It is what keeps only our own installations when listing what a user has
+# installed, so /authorize, /callback and /token fail closed while it is empty.
+GITHUB_APP_ID = "4855603"
+# Where the human-facing project site lives.
+PUBLIC_SITE_URL = "https://openstore.sh/"
+# The issuer advertised in OAuth metadata. Pinned so it never varies by hostname.
+PUBLIC_BASE_URL = "https://mcp.openstore.sh"
+# The public repository new stores are generated from.
+OPENSTORE_TEMPLATE_REPO = "intreaction/openstore-template"
+
+# Secrets, set with `wrangler secret put <NAME>` and never committed:
+#   GITHUB_CLIENT_ID       the GitHub App's client id
+#   GITHUB_CLIENT_SECRET   the GitHub App's client secret
+#   OPENSTORE_SEAL_KEY     32 bytes, base64 (`npm run gen:seal-key`)

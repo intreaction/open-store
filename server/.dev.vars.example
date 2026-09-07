@@ -1,0 +1,22 @@
+# Copy to .dev.vars (git-ignored) for `npm run dev`. Placeholders only —
+# never commit real values, and never paste a token into a chat or a log.
+
+# GitHub App credentials, from the App's settings page.
+GITHUB_CLIENT_ID="Iv23liREPLACE_ME"
+GITHUB_CLIENT_SECRET="REPLACE_ME"
+
+# 32 bytes, base64. Generate one with: npm run gen:seal-key
+OPENSTORE_SEAL_KEY="REPLACE_ME_32_BYTES_BASE64"
+
+# Non-secret vars (wrangler.toml holds the deployed values).
+GITHUB_APP_SLUG="openstore"
+# REQUIRED. The App's numeric id, from its settings page. The sign-in routes
+# refuse to run without it: it is what tells our installations from another
+# App's when listing what a user has installed.
+GITHUB_APP_ID="000000"
+PUBLIC_SITE_URL="https://openstore.sh/"
+OPENSTORE_TEMPLATE_REPO="intreaction/openstore-template"
+
+# Override the production origin inherited from wrangler.toml during local dev.
+# Without this, local discovery and the GitHub callback point at mcp.openstore.sh.
+PUBLIC_BASE_URL="http://localhost:8787"

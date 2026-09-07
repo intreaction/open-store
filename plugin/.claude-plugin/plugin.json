@@ -1,0 +1,14 @@
+{
+  "name": "openstore",
+  "displayName": "OpenStore",
+  "version": "0.3.0",
+  "description": "Give your AI a durable, user-owned memory: a private GitHub repo of plain Markdown it reads and writes through bash-like MCP tools. Sign in with GitHub via /mcp — no tokens to manage. OpenStore never holds a copy.",
+  "author": {
+    "name": "John Wheeler",
+    "url": "https://github.com/intreaction"
+  },
+  "homepage": "https://github.com/intreaction/open-store",
+  "repository": "https://github.com/intreaction/open-store",
+  "license": "Apache-2.0",
+  "keywords": ["memory", "mcp", "github", "markdown", "git", "context", "agent-memory"]
+}

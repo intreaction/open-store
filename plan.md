@@ -1,157 +1,151 @@
-# ContextDB implementation plan
+# OpenStore implementation plan
 
-Status: proposed implementation direction, September 6, 2026.
+Status: v0.1 in progress, September 6, 2026.
 
-This plan follows `concept.md`. The workspace currently contains the concept brief and no implementation or initialized Git repository. Estimates below are planning estimates for one experienced full-time engineer, not commitments.
+This plan follows `concept.md`. `architecture.md` describes the moving parts. `design.md` holds the exact
+tool contract and file format. Estimates are planning estimates for one experienced engineer, not
+commitments.
 
-## 1. What we should prove first
+## 1. What we prove first
 
-Build a personal-context product for one person, one private GitHub repository, and two independently connected AI clients. Keep business and team use as future applications of the same format.
+One person, one private GitHub repository, two independently connected AI clients. Business and team use
+are future applications of the same format.
 
 The first successful demonstration:
 
-1. The user connects a repository and an AI client.
-2. The user says, “Remember that my Mac mini has 24 GB of RAM.”
-3. The AI searches existing context and proposes a specific file change.
-4. The user reviews and approves the exact diff.
-5. The service commits it to GitHub.
-6. A second AI client retrieves the fact in a fresh conversation, without being given it again.
-7. The user corrects the fact and can inspect and undo the change.
+1. The user installs the OpenStore plugin, signs in with GitHub when the client asks, and gets a private
+   store repository created for them.
+2. The user says "Remember that my Mac mini has 24 GB of RAM."
+3. The AI runs `grep -ril mac mini` and `cat` to find where that belongs.
+4. The AI shows the exact change it intends to write.
+5. After the user agrees, the AI calls `write` and reports the short sha.
+6. A second client recalls the fact in a fresh conversation, without being told again.
+7. The user corrects it with another `write`, and can inspect it with `git_log` and `git_show` and undo it
+   with `git_revert`.
 
-Also test whether clients retrieve relevant context without explicit prompting. MCP access does not itself guarantee that a model will call tools, load repository instructions, or save information from conversations. Ship and test client setup instructions; do not market automatic universal memory before demonstrating that behavior.
+Also test whether clients retrieve context without being prompted. MCP access does not guarantee that a
+model calls tools, reads the server instructions, or decides to save anything. Ship and test client setup
+instructions. Do not market automatic universal memory before we have watched that behavior happen.
 
-## 2. Decisions to make now
+## 2. Decisions for v0.1
 
-| Area | Recommended v0.1 decision |
+| Area | Decision |
 | --- | --- |
-| Audience | Technical individuals with existing GitHub accounts |
+| Audience | People who have, or will make, a GitHub account |
+| Identity | The OpenStore GitHub App. User-to-server OAuth with expiring tokens. The user never enters a token |
+| Setup | Our app creates the store from the public template by default. Picking an existing repo is under Advanced |
 | Backend | One private GitHub repository and one configured branch per connection |
-| Format | UTF-8 Markdown, root `CONTEXT.md`, optional frontmatter, relative Markdown links |
-| Organization | Flexible folders; inspect existing content before creating new structure |
-| Naming | Keep ContextDB as a working name; investigate availability before public launch |
-| OKF | Identify the exact referenced specification before claiming compatibility; keep v0.1 independently understandable |
-| Interface | Explicit structured tools with filesystem concepts, no command-string interpreter |
-| Writes | One atomic commit per bounded change set, potentially containing multiple files |
-| Approval | Default to proposals; approval happens in an authenticated web page |
-| Stronger grants | Explicit user-configured read/write access to approved paths |
-| Conflicts | Reject stale changes; reread and regenerate rather than silently overwriting |
-| Search | Bounded text and filename search over a known repository revision |
-| Hosting | One deployable service, with the same service runnable by self-hosters |
-| Local clones | Defer the separate local-filesystem backend until the GitHub implementation works |
-| License | Choose MIT or Apache-2.0 before publishing; Apache-2.0 is a reasonable default |
+| Storage | None on the server. No database, no cache, no disk. Nothing survives a tool call |
+| Format | UTF-8 Markdown, root `CONTEXT.md`, optional frontmatter, relative links |
+| Organization | Flexible folders. Look at what exists before inventing structure |
+| Name | OpenStore. Repo `intreaction/open-store` |
+| Interface | Bash-like tools with parsed arguments and bash-like text output. No real shell |
+| Writes | Direct commits to the configured branch. One tool call is one commit |
+| Consent | In chat. The model shows the change and writes after the user agrees. Clients also prompt on write tools |
+| Undo | `git_revert` creates a new commit. History is never rewritten. Never force-push |
+| Conflicts | Non-forced ref update. On a race, redo the read-modify-commit cycle up to 3 times, then fail loudly |
+| Visibility | Repo-relative paths only. Text types only. Everything else is invisible, not forbidden |
+| Search | Literal `grep` and `find` over one resolved head, with hard limits |
+| Hosting | One Cloudflare Worker with zero storage bindings. The same code self-hosts, and stdio with a PAT stays the developer path |
+| Session state | Sealed into AES-256-GCM tokens the client holds. No rows, anywhere |
+| Authorization | No code is issued without a click. Every code passes a page that names the client and the host it goes to, a returning user included |
+| Local clones | Defer the local-filesystem backend until GitHub works |
+| License | Apache-2.0 |
 
-Do not expose raw Git staging as the public abstraction. A hosted service has no natural shared working directory, and one client's unfinished edits must not become another client's commit. Change sets give us explicit ownership, scope, review, and concurrency semantics.
+Why bash-like tools instead of a bespoke schema. Models already know `ls`, `grep`, `cat`, and `git log`.
+They compose those verbs without being taught. We parse the argument string ourselves with bash quoting
+rules, so there is no interpreter, no pipes, and no subprocess. The familiarity is the interface. The
+sandbox is real.
 
-## 3. Architecture
+Why direct commits instead of proposals. A hosted service has no shared working directory, and an approval
+page is a second surface to build, secure, and keep online. Git already gives us an audit log and a
+reversible change. The chat is where consent belongs, because that is where the user already is.
 
-```text
-AI clients                         User's browser
-    |                                   |
-    | authenticated MCP                 | login, grants, review
-    v                                   v
-              ContextDB service
-              - authorization and policy
-              - MCP tools and repository conventions
-              - change sets and approval
-              - bounded search and GitHub adapter
-                  |                 |
-                  v                 v
-           GitHub repository    Small service database
-           Markdown + history   identity, grants, proposals,
-                                approval and retry state
-```
-
-Use TypeScript as a provisional implementation choice, an MCP SDK compatible with the clients we validate, a GitHub API client, and a small relational database. Pin dependencies after the compatibility spike. Keep these as modules in one codebase rather than five independently deployed projects.
-
-The database is operational state, not the authoritative context store. Pending proposals may contain private content: encrypt them at rest, expire them, exclude content from logs, and document retention. Committed knowledge remains recoverable from Git alone. Losing service state may require reconnecting clients and discarding pending proposals.
-
-A strict interpretation of “no duplicate copy” would prevent even useful transient search caches and pending drafts. Refine the promise to “no second authoritative knowledge store.” Make temporary storage explicit and bounded.
-
-## 4. Authentication and permissions
-
-There are two separate boundaries:
-
-1. The AI client authenticates to ContextDB and receives a grant for a particular repository and capability.
-2. ContextDB authenticates to GitHub using its installed GitHub App.
-
-A GitHub App installation is not sufficient authentication for the MCP client. Resolve the signed-in user's right to the selected installation/repository on the server; do not trust repository IDs or installation IDs provided by a caller. The MCP authorization specification also prohibits simply passing downstream tokens through as the server's own credentials. [MCP authorization](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization)
-
-Use narrowly scoped GitHub App permissions and short-lived installation tokens, retained only on the server. Installation tokens expire after one hour. Account for revoked installations, removed repositories, and user access changes. [GitHub installation authentication](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation)
-
-Ship read-only, propose, and explicitly granted write modes. Enforce permissions in application code on every read, search, history, diff, and write. Repository text must never be able to grant permissions. Restricted paths must not leak through search snippets or history.
-
-## 5. Tool contract and change lifecycle
-
-Start with these operations; final names and schemas belong in the tool contract:
-
-| Tool | Purpose |
-| --- | --- |
-| `context_info` | Repository instructions, capabilities, limits, and current revision |
-| `repo_list` | List permitted files and folders |
-| `repo_read` | Read a bounded file or section at a revision |
-| `repo_search` | Search names and text; return paths, snippets, and revision |
-| `change_propose` | Submit create/replace/move/delete operations against a base revision |
-| `change_get` | Retrieve immutable proposed diff, status, and review URL |
-| `change_apply` | Commit only when a matching approval or automatic-write grant exists |
-| `repo_history` | Read permitted change history |
-
-Prefer whole-file replacement for small Markdown documents initially; defer a general patch parser until needed. Git does not track empty directories, so `mkdir` adds little value. Reverts should create new reviewed changes, never reset or rewrite branch history.
-
-Each change set includes an ID, repository and branch binding, base commit, exact operations, reason, creator identity, content digest, expiry, and idempotency key. Store model/client labels separately from authenticated identity because a model-supplied name is not verified provenance.
-
-Lifecycle: proposed → approved → applied; alternatives are rejected, expired, or conflicted. Approval is bound to the exact content digest and base revision. Editing a proposal invalidates approval. An AI claiming “the user approved” must not substitute for the authenticated approval event.
-
-Build the new Git tree and a commit with the expected base as parent, then advance the branch without force. A competing update must not be overwritten. GitHub supports non-forced reference updates; test races against actual GitHub, including retry after a timeout. If the branch changed, surface a conflict and request a regenerated proposal. Support normal forward-only branch updates in v0.1; history rewrites require reconnection/reconciliation. [GitHub reference API](https://docs.github.com/en/rest/git/refs)
-
-Approval should work even when a client offers no custom UI: return an authenticated review link with Approve/Reject in the browser. In the first version, editing happens by generating a replacement proposal. The browser can perform the approved commit directly so success does not depend on the model returning to finish it.
-
-## 6. Search and knowledge quality
-
-Fetch the repository tree and permitted Markdown at a specific commit; use a bounded disposable cache keyed by repository, revision, and authorization scope. Search titles, paths, tags, and body text. Prefer literal search initially to avoid arbitrary expensive regular expressions. Do not assume GitHub code search is an immediate, complete index of recent writes.
-
-Return snippets and bounded results rather than entire repositories. Expose truncation and pagination. After a successful write, subsequent reads must resolve the new head and avoid stale search results.
-
-Start with explicit limits, for example 1,000 Markdown files, 10 MiB of searchable text, 128 KiB per document, and 20 changed files per proposal. These are provisional engineering limits to validate through measurement, not capacity claims.
-
-Build a sample repository with devices, preferences, a project, related links, an outdated fact, and conflicting notes. Test recall, corrections, duplicate avoidance, and uncertainty. The repository records accepted knowledge, but does not make a factual claim automatically true. Instructions should preserve source/date where relevant and surface unresolved contradictions rather than invent certainty.
-
-## 7. Security and operational requirements
-
-- Reject traversal, absolute paths, symlinks, submodules, unexpected encodings, unsupported file types, and oversized operations. Use dedicated context repositories and block workflows and executable/configuration paths outside the format.
-- Treat retrieved text as untrusted data. It cannot instruct the service to expand grants, approve writes, contact another endpoint, or expose credentials. Test malicious documents against the permission boundary.
-- Verify authenticated review ownership, prevent CSRF, validate OAuth redirect handling and token audience, and test tenant isolation.
-- Detect obvious credentials on write and explain blocked content, while being honest that scanning cannot guarantee a secret-free repository.
-- Explain that deletion and revert do not erase sensitive content from Git history. Document incident handling, token rotation, and history cleanup outside ordinary memory operations.
-- Add request quotas, GitHub rate-limit handling, bounded retries, idempotent application, metadata-only logs, and alerts for errors and resource use.
-- Back up service configuration and operational state. A private GitHub repository and Git history are not an independent backup strategy; document user-controlled clones/backups.
-
-## 8. Delivery sequence and acceptance gates
+## 3. Phases
 
 | Phase | Deliverables | Exit condition | Estimate |
 | --- | --- | --- | --- |
-| 0. Validate assumptions | Two-client MCP/auth spike; GitHub read/write and race spike; exact OKF reference investigation | Both chosen clients can authenticate and call a minimal endpoint; concurrency approach demonstrated | 3–5 days |
-| 1. Specify and scaffold | Format v0.1, tool schemas/errors, sample repository, threat model, license, application skeleton and CI | The router/Mac mini scenario has exact requests, responses, permissions, and expected diffs | 3–5 days |
-| 2. Build the core | GitHub adapter, scoped reads/search, change sets, atomic commits, history, meaningful integration tests | API-level read → propose → approve → commit → retrieve succeeds; simultaneous edits cannot lose data | 1–2 weeks |
-| 3. Deliver the product loop | GitHub onboarding, hosted MCP authorization, repository grants, review page, revocation handling | Two real clients share a fact; user can reject, correct, inspect, and undo it | 1–2 weeks |
-| 4. Private alpha | Deployment, self-host instructions, quota/retention policies, failure testing, 5–10 testers | Users complete the loop without developer intervention; failures preserve data and explain recovery | 1–2 weeks |
+| 0. Server, plugin, template, personal store | TypeScript MCP server over the GitHub Git Data API, vitest suite against an in-memory store, esbuild bundle, Claude Code plugin with skill and marketplace entry, `template/`, seeded private store `intreaction/my-openstore` | Done in this build. `pwd`, `tree`, `grep`, `write`, `git_log`, `git_show`, `git_revert` all work against the live repo | done |
+| 1. Hosted endpoint with GitHub App login | Cloudflare Worker, sealed-token OAuth, GitHub App install, in-flow store creation, returning-user confirmation, and read-only connections | Real GitHub OAuth, hosted read/write, and new private-store creation verified in Claude Code | deployed |
+| 2. Landing site | GitHub Pages `site/`, static HTML, no build. Purely informational: what OpenStore is, the trust statement, and the three steps to connect it. No button that touches GitHub | A stranger reads one screen and knows exactly what to paste into their client | 2-3 days |
+| 3. Other clients | Claude.ai custom connector, ChatGPT Developer Mode validation, per-client setup docs | The same store is read and written from two different vendors' clients | 1-2 weeks |
+| 4. Directory submissions | Listings in the MCP and connector directories, whatever review each one requires | Accepted, or a written reason we were not | unknown |
 
-Allow roughly 5–8 weeks for a usable private alpha with these assumptions. Client compatibility, hosted authorization, and onboarding are the largest schedule uncertainties. A narrow developer demonstration can arrive earlier. Public multi-tenant operation requires additional hardening based on alpha findings.
+The Worker is deployed at `https://mcp.openstore.sh/mcp`. GitHub App `openstore-mcp` (ID `4855603`)
+is public and registered with Contents write, Administration write, and Metadata read. Three
+secrets are installed on the Worker; no secrets are published with the source.
 
-Do not start all layers at once: compatibility and concurrency first, then the narrow end-to-end loop, then onboarding polish.
+Real Claude Code authentication completed the GitHub OAuth exchange and selected-repository App
+installation. A hosted tool smoke check created, read, and deleted a temporary Markdown file,
+with both commits verified on GitHub. The live client exposed a scope-negotiation bug: Claude
+requests both advertised scopes, so `store` must take precedence over `store:readonly` for `/mcp`.
+The explicit `/mcp/readonly` resource still forces read-only access.
+The setup flow created a new private template-backed repository and connected Claude Code to it
+without token pasting or a user-supplied repository URL.
 
-## 9. What we need to supply
+Plugin `0.3.0` uses the hosted HTTP endpoint. `template/` is published as
+`intreaction/openstore-template`. The public source repository and GitHub Pages configuration
+are in place; the apex points to Pages and `mcp` is the Worker's custom domain.
 
-- One developer initially, with focused authentication/security review before public launch.
-- A GitHub development App and test repositories/accounts, including two identities for isolation tests.
-- Access to two target AI clients for real integration tests; record client version/plan and supported connection path.
-- A small HTTPS hosting environment, domain, secret storage, database, CI, error monitoring, and an operating budget cap.
-- A sample context repository and a repeatable evaluation set of realistic remember/recall/correct scenarios.
-- A published license, setup documentation, privacy/retention explanation, and vulnerability reporting contact.
+Remaining client validation: Claude.ai and ChatGPT custom connectors need authenticated accounts.
+Their compatibility is not implied by the successful Claude Code login.
 
-Measure search latency, API calls per user action, proposal approval rate, failed/stale writes, retrieval accuracy, onboarding completion, and actual hosting cost. Free software and a permanently unlimited free hosted endpoint are different promises. Keep self-hosting open; offer a bounded hosted alpha until costs are measured.
+## 4. What we need to supply
 
-## 10. Deferred work
+- One developer, with a focused security review of the hosted endpoint before it is public.
+- The OpenStore GitHub App, registered per `docs/github-app-setup.md`, plus a second GitHub identity with
+  no installation, for isolation and first-run tests.
+- The public `intreaction/openstore-template` repository, marked as a template.
+- Accounts on the target clients for real integration tests. Record client version and plan.
+- A Cloudflare account, a domain, and a budget cap. No database, so nothing to back up but config, and the
+  only durable secrets are the App credentials and the seal key.
+- A sample store and a repeatable set of remember, recall, correct, and undo scenarios.
+- Published license, setup docs, an honest privacy statement, and a vulnerability contact.
 
-Defer embeddings, attachments, encryption formats, automatic imports, background librarians, team RBAC, additional Git providers, offline synchronization, native local-clone access, large-repository support, rich knowledge editing, and billing.
+## 5. Metrics
 
-The immediate next implementation deliverables are `docs/spec-v0.1.md`, `docs/mcp-contract.md`, and `examples/personal-context/`, informed by the small compatibility/concurrency spike. Draft these as a provisional convention and validate them with the reference implementation before presenting the format as an established standard.
+Measure latency per tool call, GitHub API calls per user action, failed writes from concurrent updates,
+retrieval accuracy on the scenario set, onboarding completion, and hosting cost per active user. Free
+software and a permanently free hosted endpoint are different promises. Self-hosting stays open. The
+hosted endpoint stays bounded until costs are measured.
+
+## 6. Deferred
+
+Embeddings, attachments, encryption formats, automatic imports, background cleanup agents, team access
+control, Git providers other than GitHub, offline sync, native local-clone access, large-repository
+support, and billing.
+
+## 7. Honest risks
+
+- **An authorization code can be replayed inside its five-minute window.** With no storage there is nowhere
+  to record that a code was already redeemed, so single use cannot be enforced. The mitigation is PKCE: the
+  code is bound to an S256 challenge and the verifier never leaves the client that created it, so a
+  captured code is not enough. The window is short and the code is sealed and expiring. We state this
+  rather than implying single use, and we would revisit it before recommending the hosted endpoint for
+  anything beyond personal notes.
+- **Repository creation needs `Administration: write`, which is more than the brief assumed.** GitHub
+  documents `POST /repos/{template_owner}/{template_repo}/generate` as available to user-to-server tokens,
+  and the `POST /user/repos` fallback too, but both require `Administration` (write) on top of `Contents`
+  (read and write) and `Metadata` (read). Registering the App with only Contents and Metadata makes the
+  default "create my store" action fail with a 403, leaving only Advanced. `docs/github-app-setup.md` has
+  the corrected permission table.
+- **A newly created repository cannot be added to a "selected repositories" installation.**
+  `PUT /user/installations/{id}/repositories/{repository_id}` works only for classic PATs, so the flow
+  polls for visibility and then asks the user to add it on GitHub. Installations scoped to "all
+  repositories" never hit that page. It has not been exercised against a real installation.
+- **Claude.ai and ChatGPT OAuth compatibility is unvalidated.** Claude Code plugins work. Claude.ai custom
+  connectors and ChatGPT Developer Mode each implement discovery, dynamic registration, PKCE, and resource
+  indicators slightly differently, and they change. Our authorization server is written to the spec, not to
+  any one client, and it has not yet completed a flow with either. Phase 3 may find that one of them cannot
+  connect as designed.
+- **A public listing means GitHub App review.** Making the App installable by any account and listing it in
+  the GitHub Marketplace or the MCP directories brings requirements we have not read: branding, a support
+  contact, a privacy policy, sometimes a security questionnaire. Phase 4 has no estimate for that reason,
+  and none of it is code.
+- **Models may not call the tools.** The store is useless if the model never greps it. This is a prompting
+  and skill-design problem as much as an engineering one, and it is the reason phase 0 shipped a skill.
+- **A hosted operator could read traffic in flight.** We retain nothing and log only tool name, exit code,
+  duration, and byte counts. That is a real guarantee about retention, not about interception. Self-hosting
+  is the answer for anyone who needs more.
+- **Git history is permanent.** `rm` and `git_revert` add commits. They do not erase what was written. Users
+  who commit a secret need history surgery outside OpenStore, and the docs must say so.

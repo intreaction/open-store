@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "openstore": {
+      "type": "http",
+      "url": "https://mcp.openstore.sh/mcp"
+    }
+  }
+}

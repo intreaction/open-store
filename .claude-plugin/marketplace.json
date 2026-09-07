@@ -1,0 +1,33 @@
+{
+  "name": "openstore",
+  "owner": {
+    "name": "John Wheeler",
+    "url": "https://github.com/intreaction"
+  },
+  "description": "OpenStore: a durable, user-owned memory for your AI, stored as plain Markdown in a private GitHub repo you control. Sign in with GitHub; no tokens to manage.",
+  "plugins": [
+    {
+      "name": "openstore",
+      "source": "./plugin",
+      "description": "Give your AI a durable, user-owned memory: a private GitHub repo of plain Markdown it reads and writes through bash-like MCP tools. Sign in with GitHub via /mcp — no tokens to manage. OpenStore never holds a copy.",
+      "version": "0.3.0",
+      "author": {
+        "name": "John Wheeler",
+        "url": "https://github.com/intreaction"
+      },
+      "homepage": "https://github.com/intreaction/open-store",
+      "repository": "https://github.com/intreaction/open-store",
+      "license": "Apache-2.0",
+      "keywords": [
+        "memory",
+        "mcp",
+        "github",
+        "markdown",
+        "git",
+        "context",
+        "agent-memory"
+      ],
+      "category": "productivity"
+    }
+  ]
+}

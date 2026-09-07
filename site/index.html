@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenStore — your AI's memory is a Git repo you own</title>
+<meta name="description" content="OpenStore gives any AI a durable memory: a private GitHub repository of plain Markdown it reads and writes over MCP. OpenStore never holds a copy.">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:,">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <svg class="brand-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="2" y="4" width="28" height="24" rx="4" stroke="currentColor" stroke-width="2"/>
+        <path d="M9 12h14M9 17h14M9 22h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      OpenStore
+    </a>
+    <nav class="topnav">
+      <a href="#how-it-works">How it works</a>
+      <a href="#trust">What we never see</a>
+      <a href="https://github.com/intreaction/open-store">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Open source · Apache-2.0 · MCP</span>
+      <h1>Your AI's memory is a <em>Git repo you own</em>.</h1>
+      <p class="lede">
+        OpenStore gives any AI a durable, user-owned store: a private GitHub repository of plain
+        Markdown that it reads and writes with bash-like tools&nbsp;&mdash;
+        <code>grep</code>, <code>cat</code>, <code>write</code>, <code>git_log</code>. OpenStore
+        never holds a copy. The repo is the only source of truth.
+      </p>
+      <p><strong>Live for Claude Code.</strong> GitHub sign-in and read/write tools are verified.
+        Claude.ai and ChatGPT connector verification is still in progress.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#get-started">Get started</a>
+        <a class="btn btn-ghost" href="https://github.com/intreaction/open-store">View the source</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="get-started">
+    <div class="wrap">
+      <h2>Three steps</h2>
+      <p class="section-intro">
+        No account to create on our end. You sign in with GitHub, and GitHub is where your data
+        lives, before, during, and after you use OpenStore.
+      </p>
+
+      <div class="steps">
+
+        <article class="step-card step-card-wide">
+          <div class="step-num">1</div>
+          <h3>Add OpenStore to your AI</h3>
+          <p>Pick the entry point that matches how you work. All three talk to the same hosted OpenStore endpoint.</p>
+          <div class="entry-points">
+
+            <div class="entry-point">
+              <h4>Connect to Claude</h4>
+              <p><strong>Claude.ai &amp; Claude Desktop:</strong> Settings &rarr; Connectors &rarr; Add custom connector, then paste the MCP URL. Sign in with GitHub when prompted.</p>
+              <div class="copybox"><pre>https://mcp.openstore.sh/mcp</pre><button class="copy-btn" type="button" aria-label="Copy MCP URL">Copy</button></div>
+              <p><strong>Claude Code:</strong></p>
+              <div class="copybox"><pre>claude plugin marketplace add intreaction/open-store</pre><button class="copy-btn" type="button" aria-label="Copy command">Copy</button></div>
+              <div class="copybox"><pre>claude plugin install openstore@openstore</pre><button class="copy-btn" type="button" aria-label="Copy command">Copy</button></div>
+              <p>Then run <code>/mcp</code> inside Claude Code to sign in.</p>
+            </div>
+
+            <div class="entry-point">
+              <h4>Connect to OpenAI</h4>
+              <p><strong>ChatGPT:</strong> Settings &rarr; Apps &rarr; Advanced settings &rarr; Developer mode on &rarr; Create app, then paste the MCP URL. Sign in with GitHub when prompted.</p>
+              <div class="copybox"><pre>https://mcp.openstore.sh/mcp</pre><button class="copy-btn" type="button" aria-label="Copy MCP URL">Copy</button></div>
+              <p>ChatGPT asks for your approval before it runs any write action.</p>
+            </div>
+
+            <div class="entry-point">
+              <h4>Install via MCP</h4>
+              <p>Any other MCP client&nbsp;&mdash; Cursor, VS Code, Windsurf, a custom agent&nbsp;&mdash; can connect directly to the same endpoint:</p>
+              <div class="copybox"><pre>https://mcp.openstore.sh/mcp</pre><button class="copy-btn" type="button" aria-label="Copy MCP URL">Copy</button></div>
+              <p>It speaks Streamable HTTP with standard OAuth 2.1 (dynamic client registration and PKCE). Add <code>/readonly</code> to the URL for a read-only connection.</p>
+            </div>
+
+          </div>
+        </article>
+
+        <article class="step-card">
+          <div class="step-num">2</div>
+          <h3>Sign in with GitHub</h3>
+          <p>
+            Whichever entry point you used, sign in with GitHub through the OpenStore GitHub App
+            when your AI asks. OpenStore creates a private store repository for you
+            automatically&nbsp;&mdash; or, under "Advanced," you can pick an existing repository
+            instead. This page has no buttons that touch GitHub; the sign-in happens inside your
+            AI client.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <div class="step-num">3</div>
+          <h3>Talk</h3>
+          <p>
+            Ask it to remember something, correct something, or recall something from months
+            ago. It greps and cats the store to answer, and writes a normal Git commit&nbsp;&mdash;
+            visible, diffable, revertable&nbsp;&mdash; only after you agree.
+          </p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="how-it-works">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <p class="section-intro">
+        OpenStore sits between your AI client and GitHub for exactly as long as one request takes.
+        It never becomes a third copy of your data.
+      </p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 720 200" role="img" aria-labelledby="diagram-title diagram-desc" xmlns="http://www.w3.org/2000/svg">
+          <title id="diagram-title">Data flow diagram</title>
+          <desc id="diagram-desc">AI client connects to OpenStore, which passes requests through to your GitHub repository. OpenStore stores nothing itself.</desc>
+
+          <!-- AI client box -->
+          <rect x="20" y="60" width="180" height="80" rx="12" fill="none" stroke="var(--border-strong)" stroke-width="1.5"/>
+          <text x="110" y="95" text-anchor="middle" class="diagram-box-label">AI client</text>
+          <text x="110" y="113" text-anchor="middle" class="diagram-box-sub">Claude, ChatGPT, ...</text>
+
+          <!-- OpenStore box (middle, emphasized) -->
+          <rect x="270" y="50" width="180" height="100" rx="12" fill="none" stroke="var(--accent)" stroke-width="2"/>
+          <text x="360" y="88" text-anchor="middle" class="diagram-box-label">OpenStore</text>
+          <text x="360" y="106" text-anchor="middle" class="diagram-box-sub">stateless MCP endpoint</text>
+          <text x="360" y="124" text-anchor="middle" class="diagram-box-sub" font-style="italic">nothing stored here</text>
+
+          <!-- GitHub repo box -->
+          <rect x="520" y="60" width="180" height="80" rx="12" fill="none" stroke="var(--border-strong)" stroke-width="1.5"/>
+          <text x="610" y="95" text-anchor="middle" class="diagram-box-label">Your GitHub repo</text>
+          <text x="610" y="113" text-anchor="middle" class="diagram-box-sub">private, plain Markdown</text>
+
+          <!-- Arrow 1 -->
+          <line x1="200" y1="100" x2="264" y2="100" stroke="var(--border-strong)" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="232" y="88" text-anchor="middle" class="diagram-arrow-label">MCP tool call</text>
+
+          <!-- Arrow 2 -->
+          <line x1="450" y1="100" x2="514" y2="100" stroke="var(--border-strong)" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="482" y="88" text-anchor="middle" class="diagram-arrow-label">Git commit / read</text>
+
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--border-strong)"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="how-notes">
+        <div class="how-note">
+          <h4>Bash-like tools</h4>
+          <p>Your AI uses tools it already understands&nbsp;&mdash; <code>grep</code>, <code>cat</code>, <code>write</code>&nbsp;&mdash; scoped to your repo's text files only.</p>
+        </div>
+        <div class="how-note">
+          <h4>Direct commits</h4>
+          <p>Every write is one ordinary commit to your branch. No proposals, no approval pages. Undo with <code>git_revert</code>.</p>
+        </div>
+        <div class="how-note">
+          <h4>Consent in chat</h4>
+          <p>The model shows the change before writing, and your AI client prompts you before running a write tool.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="trust">
+    <div class="wrap">
+      <h2>What we never see</h2>
+      <div class="trust-card">
+        <p>
+          OpenStore is a stateless pass-through. Content and credentials pass through process
+          memory for the length of one request and are never written anywhere. Logs record only
+          the tool name, exit code, duration, and byte counts&nbsp;&mdash; never content, ever.
+        </p>
+        <p class="fine">
+          An operator could, in principle, read traffic in flight, as any pass-through could.
+          The guarantee is that nothing is retained: no database, no cache, no disk. Self-hosting
+          the same Apache-2.0 code removes even that possibility.
+        </p>
+        <ul class="trust-list">
+          <li>No database, no cache, no disk&nbsp;&mdash; nothing outlives a single request</li>
+          <li>No content in logs, ever</li>
+          <li>Deploy config with zero storage bindings, checkable by anyone</li>
+          <li>Open source and self-hostable, so you never have to take our word for it</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="take-it-with-you">
+    <div class="wrap">
+      <h2>Take it with you</h2>
+      <div class="takeit">
+        <svg class="takeit-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 3l8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7l8-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <p>
+            It is just Markdown in your repo. If you stop using OpenStore, or any AI at all, you
+            are left holding a folder of plain files with full Git history&nbsp;&mdash; readable,
+            searchable, and useful on their own, in any editor, forever.
+          </p>
+          <p>
+            Uninstall the plugin or revoke the GitHub App's access whenever you like. Nothing
+            about your data depends on OpenStore continuing to exist.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>OpenStore &middot; Apache-2.0</span>
+    <div class="footer-links">
+      <a href="https://github.com/intreaction/open-store">open-store</a>
+      <a href="https://github.com/intreaction/openstore-template">openstore-template</a>
+      <a href="https://github.com/apps/openstore-mcp">GitHub App</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  try {
+    document.querySelectorAll('.copybox').forEach(function (box) {
+      var btn = box.querySelector('.copy-btn');
+      var pre = box.querySelector('pre');
+      if (!btn || !pre) return;
+      btn.addEventListener('click', function () {
+        try {
+          if (!navigator.clipboard || !navigator.clipboard.writeText) return;
+          navigator.clipboard.writeText(pre.textContent).then(function () {
+            var original = btn.textContent;
+            btn.textContent = 'Copied';
+            setTimeout(function () { btn.textContent = original; }, 1500);
+          }, function () { /* denied or unsupported: no-op */ });
+        } catch (e) { /* no-op */ }
+      });
+    });
+  } catch (e) { /* no-op */ }
+})();
+</script>
+
+</body>
+</html>
