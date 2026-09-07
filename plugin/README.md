@@ -57,9 +57,9 @@ trust statement in the project's `README.md`.
 
 ### Re-authenticating or switching stores
 
-- `claude mcp get openstore` shows connection status.
-- `claude mcp logout openstore` clears the stored credential; running `/mcp` again re-triggers
-  sign-in.
+- Run `/mcp` inside Claude Code and select `plugin:openstore:openstore` to inspect the connection
+  and manage authentication. Plugin-provided servers are not available to standalone
+  `claude mcp login` / `claude mcp get` commands.
 - To point at a different repo (e.g. switch from your default store to an existing one under
   Advanced), log out and sign in again — the setup page reappears whenever you have more than one
   eligible repo, or you can revoke the GitHub App's installation on a repo to remove it from the
@@ -74,7 +74,7 @@ to register only the read tools (`ls`, `find`, `grep`, `cat`, `head`, `tail`, `t
 ## Uninstall / disconnect
 
 `claude plugin uninstall openstore@openstore` removes the plugin from Claude Code.
-`claude mcp logout openstore` drops the stored OAuth credential without uninstalling. Either way,
+Use `/mcp` to manage the plugin's OAuth session without uninstalling. Either way,
 nothing about your store repo changes — OpenStore never held a copy of it, so the repo, its
 history, and every commit stay exactly as they were on GitHub. Revoking the GitHub App's
 installation (GitHub → Settings → Applications) cuts off access entirely, from either side.

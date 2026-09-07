@@ -47,8 +47,8 @@ new commit; history is never rewritten and the branch is never force-pushed.
 Claude.ai (Settings → Connectors → Add custom connector) and ChatGPT (Settings → Apps → Developer
 mode → Create app) take the same MCP URL and run the same sign-in.
 
-`claude mcp get openstore` shows the connection; `claude mcp logout openstore` signs you out so you
-can switch stores.
+Run `/mcp` inside Claude Code to inspect `plugin:openstore:openstore` and manage its authentication.
+Plugin-provided servers do not appear in the standalone `claude mcp login` command's server list.
 
 ## Developer / self-host: the stdio path
 
