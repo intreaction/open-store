@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">OpenStore</title>
+  <desc id="desc">A document resting in an open box.</desc>
+  <rect width="512" height="512" rx="112" fill="#153E35"/>
+  <path d="M196 108h91l37 37v141H196z" fill="#F6F2E8"/>
+  <path d="M287 108v37h37" fill="#A6CBB2"/>
+  <path d="M220 180h78m-78 29h58" fill="none" stroke="#153E35" stroke-width="12" stroke-linecap="round"/>
+  <path d="m128 255 128 55 128-55v103l-128 56-128-56z" fill="#A6CBB2"/>
+  <path d="M256 310v104l128-56V255z" fill="#71AA8B"/>
+  <path d="m128 255 51-39 77 34-51 39zm256 0-51-39-77 34 51 39z" fill="#F6F2E8"/>
+</svg>

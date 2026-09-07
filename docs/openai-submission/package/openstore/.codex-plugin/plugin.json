@@ -1,0 +1,35 @@
+{
+  "name": "openstore",
+  "version": "0.4.0",
+  "description": "Save and recall knowledge in a GitHub repository you control.",
+  "author": {
+    "name": "Int.Reaction llc",
+    "email": "support@openstore.sh"
+  },
+  "homepage": "https://openstore.sh/",
+  "repository": "https://github.com/intreaction/openstore",
+  "license": "Apache-2.0",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "OpenStore",
+    "shortDescription": "AI memory you own.",
+    "developerName": "Int.Reaction llc",
+    "category": "Productivity",
+    "websiteURL": "https://openstore.sh/",
+    "privacyPolicyURL": "https://openstore.sh/privacy.html",
+    "termsOfServiceURL": "https://openstore.sh/terms.html",
+    "defaultPrompt": [
+      "Find my notes about my current projects.",
+      "Remember that I prefer concise project updates.",
+      "Show the most recent change to my notes."
+    ],
+    "brandColor": "#153E35",
+    "logo": "./assets/openstore.svg",
+    "longDescription": "Search and maintain knowledge in your GitHub repository. New stores use a minimal OKF starter. Read notes, make guarded edits, and inspect or undo changes through Git history.",
+    "capabilities": [
+      "Read",
+      "Write"
+    ]
+  }
+}

@@ -543,3 +543,9 @@ footer a {
   display: flex;
   gap: 18px;
 }
+
+/* Policy and support documents. */
+.legal { max-width: 780px; padding-top: 3rem; padding-bottom: 4rem; overflow-wrap: anywhere; }
+.legal h1 { font-size: clamp(2rem, 6vw, 3rem); }
+.legal h2 { margin-top: 2rem; font-size: 1.35rem; }
+.legal li { margin-bottom: .75rem; }

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenStore — your AI's memory is a Git repo you own</title>
-<meta name="description" content="OpenStore gives any AI a durable memory: a private GitHub repository of plain Markdown it reads and writes over MCP. OpenStore never holds a copy.">
+<meta name="description" content="OpenStore gives any AI a durable memory: a private GitHub repository of plain Markdown it reads and writes over MCP. OpenStore does not persist your notes.">
 <link rel="stylesheet" href="style.css">
-<link rel="icon" href="data:,">
+<link rel="icon" href="assets/openstore.svg">
 </head>
 <body>
 
@@ -21,8 +21,8 @@
     </a>
     <nav class="topnav">
       <a href="#how-it-works">How it works</a>
-      <a href="#trust">What we never see</a>
-      <a href="https://github.com/intreaction/open-store">GitHub</a>
+      <a href="#trust">How your data is handled</a>
+      <a href="https://github.com/intreaction/openstore">GitHub</a>
     </nav>
   </div>
 </header>
@@ -37,13 +37,13 @@
         OpenStore gives any AI a durable, user-owned store: a private GitHub repository of plain
         Markdown that it reads and writes with bash-like tools&nbsp;&mdash;
         <code>grep</code>, <code>cat</code>, <code>write</code>, <code>git_log</code>. OpenStore
-        never holds a copy. The repo is the only source of truth.
+        does not persist your notes. GitHub holds the repository and its history.
       </p>
       <p><strong>Live for Claude Code.</strong> GitHub sign-in and read/write tools are verified.
         Claude.ai and ChatGPT connector verification is still in progress.</p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="#get-started">Get started</a>
-        <a class="btn btn-ghost" href="https://github.com/intreaction/open-store">View the source</a>
+        <a class="btn btn-ghost" href="https://github.com/intreaction/openstore">View the source</a>
       </div>
     </div>
   </section>
@@ -69,7 +69,7 @@
               <p><strong>Claude.ai &amp; Claude Desktop:</strong> Settings &rarr; Connectors &rarr; Add custom connector, then paste the MCP URL. Sign in with GitHub when prompted.</p>
               <div class="copybox"><pre>https://mcp.openstore.sh/mcp</pre><button class="copy-btn" type="button" aria-label="Copy MCP URL">Copy</button></div>
               <p><strong>Claude Code:</strong></p>
-              <div class="copybox"><pre>claude plugin marketplace add intreaction/open-store</pre><button class="copy-btn" type="button" aria-label="Copy command">Copy</button></div>
+              <div class="copybox"><pre>claude plugin marketplace add intreaction/openstore</pre><button class="copy-btn" type="button" aria-label="Copy command">Copy</button></div>
               <div class="copybox"><pre>claude plugin install openstore@openstore</pre><button class="copy-btn" type="button" aria-label="Copy command">Copy</button></div>
               <p>Then run <code>/mcp</code> inside Claude Code to sign in.</p>
             </div>
@@ -181,24 +181,12 @@
 
   <section id="trust">
     <div class="wrap">
-      <h2>What we never see</h2>
+      <h2>How your data is handled</h2>
       <div class="trust-card">
-        <p>
-          OpenStore is a stateless pass-through. Content and credentials pass through process
-          memory for the length of one request and are never written anywhere. Logs record only
-          the tool name, exit code, duration, and byte counts&nbsp;&mdash; never content, ever.
-        </p>
-        <p class="fine">
-          An operator could, in principle, read traffic in flight, as any pass-through could.
-          The guarantee is that nothing is retained: no database, no cache, no disk. Self-hosting
-          the same Apache-2.0 code removes even that possibility.
-        </p>
-        <ul class="trust-list">
-          <li>No database, no cache, no disk&nbsp;&mdash; nothing outlives a single request</li>
-          <li>No content in logs, ever</li>
-          <li>Deploy config with zero storage bindings, checkable by anyone</li>
-          <li>Open source and self-hostable, so you never have to take our word for it</li>
-        </ul>
+        <p>OpenStore passes requests through to GitHub. It processes content and credentials in memory without saving them in application storage.</p>
+        <p>Your client holds connection credentials and may retain retrieved content. GitHub stores your notes and history. Cloudflare provides the hosted endpoint and may retain network diagnostics separately from the application.</p>
+        <ul class="trust-list"><li>No application database of notes or user credentials</li><li>Worker invocation logs and traces disabled</li><li>Source and deployment configuration available for inspection</li></ul>
+        <p>Read our <a href="privacy.html">Privacy Policy</a> for retention, provider processing, and deletion limits.</p>
       </div>
     </div>
   </section>
@@ -230,9 +218,10 @@
 
 <footer>
   <div class="wrap">
-    <span>OpenStore &middot; Apache-2.0</span>
+    <span>OpenStore &middot; Int.Reaction llc</span>
     <div class="footer-links">
-      <a href="https://github.com/intreaction/open-store">open-store</a>
+      <a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="support.html">Support</a>
+      <a href="https://github.com/intreaction/openstore">openstore</a>
       <a href="https://github.com/intreaction/openstore-template">openstore-template</a>
       <a href="https://github.com/apps/openstore-mcp">GitHub App</a>
     </div>
